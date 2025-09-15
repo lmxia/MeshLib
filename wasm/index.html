@@ -8,6 +8,33 @@
         <title>MeshViewer</title>
         <link rel="stylesheet" href="styles.css">
         <link rel="preload" href="tool_not_supp.svg">
+        <style>
+            #controls {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 1000;
+            }
+            .button {
+                background-color: #4CAF50;
+                border: none;
+                color: white;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                border-radius: 4px;
+            }
+            .button:hover {
+                background-color: #45a049;
+            }
+            canvas.emscripten {
+                margin-top: 50px;
+            }
+        </style>
     </head>
 
     <body class="dark-theme adaptive-theme">
@@ -17,6 +44,9 @@
         <div class="progress-bg dark-progress adaptive-progress" id="progress-holder">
             <div class="progress" id="progress">
             </div>
+        </div>
+        <div id="controls">
+            <input id="open-file-btn" type="button" class="button" value="打开文件" />
         </div>
         <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
         <script src="ios_detect.js"></script>
@@ -35,6 +65,41 @@
         <script src="error.js"></script>
         <script src="download_desktop_window.js"></script>
         <script async src=MeshViewer.js></script>
+        <script>
+            (function(){
+                var btn = document.getElementById('open-file-btn');
+                if (btn) {
+                    btn.addEventListener('click', function(){
+                        var exts = '.stl,.obj,.ply,.glb,.gltf,.off,.ctm,.e57,.las,.laz,.mesh,.zip,.3mf';
+                        var canvas = document.getElementById('canvas');
+                        if (canvas && typeof canvas.focus === 'function') {
+                            try { canvas.focus(); } catch(e) {}
+                        }
+                        var input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = exts;
+                        input.style.display = 'none';
+                        input.onchange = function(e){
+                            var f = e.target && e.target.files && e.target.files[0];
+                            if (!f) return;
+                            var reader = new FileReader();
+                            reader.onloadend = function(ev){
+                                if (reader.readyState !== 2) return;
+                                if (typeof emplace_file_in_local_FS_and_open === 'function') {
+                                    emplace_file_in_local_FS_and_open(f.name, new Uint8Array(ev.target.result));
+                                } else if (typeof open_files === 'function') {
+                                    open_files(e);
+                                }
+                            };
+                            reader.readAsArrayBuffer(f);
+                        };
+                        document.body.appendChild(input);
+                        input.click();
+                        setTimeout(function(){ document.body.removeChild(input); }, 0);
+                    });
+                }
+            })();
+        </script>
     </body>
 
     </html>

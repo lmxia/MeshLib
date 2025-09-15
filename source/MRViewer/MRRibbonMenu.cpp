@@ -86,6 +86,8 @@ auto getItemCaption( const std::string& name )->const std::string&
 RibbonMenu::RibbonMenu() :
     toolbar_( new Toolbar() )
 {
+    // 隐藏 Ribbon 的 Tabs 和 Quick Access，但保留其他 ImGui 弹窗/统计
+    menuUIConfig_.topLayout = RibbonTopPanelLayoutMode::None;
 }
 
 RibbonMenu::~RibbonMenu()
@@ -123,12 +125,14 @@ void RibbonMenu::init( MR::Viewer* _viewer )
         const bool cShowTopPanel = menuUIConfig_.topLayout != RibbonTopPanelLayoutMode::None;
         const bool cShowAny = cShowTopPanel || menuUIConfig_.drawScenePanel;
 
+        drawActiveBlockingDialog_();
+        drawActiveNonBlockingDialogs_();
+
+        ProgressBar::setup(menu_scaling());
+
         if ( cShowTopPanel )
         {
             drawTopPanel_( menuUIConfig_.topLayout == RibbonTopPanelLayoutMode::RibbonWithTabs, menuUIConfig_.centerRibbonItems );
-
-            drawActiveBlockingDialog_();
-            drawActiveNonBlockingDialogs_();
         }
 
         if ( cShowTopPanel && menuUIConfig_.drawToolbar )
