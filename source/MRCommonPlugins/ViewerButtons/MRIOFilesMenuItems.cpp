@@ -169,6 +169,15 @@ EMSCRIPTEN_KEEPALIVE void emsAddFileToScene( const char* filename, int contextId
     getViewerInstance().loadFiles( paths, opts );
 }
 
+// 封装 SaveObjectMenuItem::action() 供 JavaScript 调用
+EMSCRIPTEN_KEEPALIVE bool emsSaveSelectedObjects()
+{
+    using namespace MR;
+    SaveObjectMenuItem saveItem;
+    return saveItem.action();
+}
+
+
 EMSCRIPTEN_KEEPALIVE void emsGetObjectFromScene( const char* objectName, const char* filename )
 {
     using namespace MR;
