@@ -117,7 +117,7 @@ void RibbonMenu::init( MR::Viewer* _viewer )
         {
             drawTopPanel_( menuUIConfig_.topLayout == RibbonTopPanelLayoutMode::RibbonWithTabs, menuUIConfig_.centerRibbonItems );
         }
-
+        // 去掉cShowTopPanel, drawToolbar 为true 会显示悬浮工具栏
         if ( cShowTopPanel && menuUIConfig_.drawToolbar )
         {
             toolbar_->drawToolbar();
@@ -1503,6 +1503,27 @@ bool RibbonMenu::itemPressed_( const std::shared_ptr<RibbonMenuItem>& item, cons
         }
     }
     return true;
+}
+
+bool RibbonMenu::executeItemByName( const std::string& itemName )
+{
+    auto itemIt = RibbonSchemaHolder::schema().items.find( itemName );
+    if ( itemIt == RibbonSchemaHolder::schema().items.end() || !itemIt->second.item )
+        return false;
+    auto item = itemIt->second.item;
+    auto req = getRequirements_( item );
+    return itemPressed_( item, req );
+}
+
+std::vector<std::string> RibbonMenu::getActiveItemNames() const
+{
+    std::vector<std::string> res;
+    if ( activeBlockingItem_.item )
+        res.push_back( activeBlockingItem_.item->name() );
+    for ( const auto& it : activeNonBlockingItems_ )
+        if ( it.item )
+            res.push_back( it.item->name() );
+    return res;
 }
 
 void RibbonMenu::changeTab_( int newTab )

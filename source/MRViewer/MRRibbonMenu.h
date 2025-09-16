@@ -120,6 +120,12 @@ public:
     /// clones selected part of given object as separate object (faces, points)
     MRVIEWER_API static void cloneSelectedPart( const std::shared_ptr<Object>& object );
 
+    // Execute a ribbon item by its schema name (for external callers like WASM/JS)
+    MRVIEWER_API bool executeItemByName( const std::string& itemName );
+
+    // Returns names of currently active items (blocking and non-blocking)
+    MRVIEWER_API std::vector<std::string> getActiveItemNames() const;
+
     using TabChangedSignal = boost::signals2::signal<void( int prevTabId, int newTabId )>;
     /// this signal is called when active tab changes
     TabChangedSignal tabChangedSignal;

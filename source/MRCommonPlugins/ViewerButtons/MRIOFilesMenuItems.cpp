@@ -1,4 +1,9 @@
 #include "MRIOFilesMenuItems.h"
+#include "MRViewer/MRViewer.h"
+#include "MRViewer/MRRibbonMenu.h"
+#include "MRViewer/MRToolbar.h"
+#include "MRCommonPlugins/Basic/MRMoveObjectByMouse.h"
+#include <emscripten/emscripten.h>
 #include "MRMesh/MRChrono.h"
 #include "MRViewer/MRFileDialog.h"
 #include "MRViewer/MRMouseController.h"
@@ -169,15 +174,6 @@ EMSCRIPTEN_KEEPALIVE void emsAddFileToScene( const char* filename, int contextId
     getViewerInstance().loadFiles( paths, opts );
 }
 
-// 封装 SaveObjectMenuItem::action() 供 JavaScript 调用
-
-EMSCRIPTEN_KEEPALIVE bool emsOpenFilesMenuAction()
-{
-    using namespace MR;
-    OpenFilesMenuItem openItem;
-    return openItem.action();
-}
-
 EMSCRIPTEN_KEEPALIVE bool emsSaveSelectedObjects()
 {
     using namespace MR;
@@ -316,6 +312,140 @@ EMSCRIPTEN_KEEPALIVE void emsFitScene()
 
 namespace MR
 {
+// ========== WASM bridge for HTML/JS toolbar ==========
+#ifdef __EMSCRIPTEN__
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE const char* emsGetToolbarItems()
+{
+    try
+    {
+        static std::string result;
+        auto menu = getViewerInstance().getRibbonMenu();
+        if ( !menu ) { result = "[]"; return result.c_str(); }
+
+        const auto& list = menu->getToolbar().getItemsList();
+        Json::Value arr( Json::arrayValue );
+        for ( const auto& name : list )
+            arr.append( name );
+        result = arr.toStyledString();
+        return result.c_str();
+    }
+    catch ( ... )
+    {
+        static std::string empty = "[]";
+        return empty.c_str();
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE const char* emsGetToolbarQuickAccess()
+{
+    try
+    {
+        static std::string result;
+        auto menu = getViewerInstance().getRibbonMenu();
+        if ( !menu ) { result = "[]"; return result.c_str(); }
+
+        const auto& list = menu->getToolbar().getItemsList();
+        auto& schema = RibbonSchemaHolder::schema();
+        Json::Value arr( Json::arrayValue );
+        for ( const auto& name : list )
+        {
+            Json::Value itemJson( Json::objectValue );
+            itemJson["name"] = name;
+            auto it = schema.items.find( name );
+            if ( it != schema.items.end() )
+            {
+                const auto& mi = it->second;
+                itemJson["caption"] = mi.caption;
+                itemJson["icon"] = mi.icon;
+                itemJson["tooltip"] = mi.tooltip;
+                if ( mi.item )
+                {
+                    const auto& drops = mi.item->dropItems();
+                    if ( !drops.empty() )
+                    {
+                        Json::Value dropsArr( Json::arrayValue );
+                        for ( const auto& d : drops )
+                        {
+                            if ( !d ) continue;
+                            Json::Value dj( Json::objectValue );
+                            auto dit = schema.items.find( d->name() );
+                            dj["name"] = d->name();
+                            if ( dit != schema.items.end() )
+                            {
+                                dj["caption"] = dit->second.caption;
+                                dj["icon"] = dit->second.icon;
+                                dj["tooltip"] = dit->second.tooltip;
+                            }
+                            dropsArr.append( dj );
+                        }
+                        itemJson["dropItems"] = dropsArr;
+                    }
+                }
+            }
+            arr.append( itemJson );
+        }
+        result = arr.toStyledString();
+        return result.c_str();
+    }
+    catch ( ... )
+    {
+        static std::string empty = "[]";
+        return empty.c_str();
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE bool emsInvokeToolbarItem( const char* itemName )
+{
+    if ( !itemName ) return false;
+    auto menu = getViewerInstance().getRibbonMenu();
+    if ( !menu ) return false;
+    bool ok = menu->executeItemByName( itemName );
+    getViewerInstance().emplaceEvent( "Invoke toolbar item", [&](){ getViewerInstance().draw(); }, true );
+    return ok;
+}
+
+EMSCRIPTEN_KEEPALIVE void emsSetMoveMode( int mode )
+{
+    if ( auto* mv = MR::MoveObjectByMouse::instance() )
+    {
+        mv->setMode( mode );
+        mv->setDialogVisible( false );
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE void emsSetMoveTarget( int target )
+{
+    if ( auto* mv = MR::MoveObjectByMouse::instance() )
+    {
+        mv->setTarget( target );
+        mv->setDialogVisible( false );
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE const char* emsGetActiveItems()
+{
+    try
+    {
+        static std::string result;
+        auto menu = getViewerInstance().getRibbonMenu();
+        if ( !menu ) { result = "[]"; return result.c_str(); }
+        const auto active = menu->getActiveItemNames();
+        Json::Value arr( Json::arrayValue );
+        for ( const auto& n : active ) arr.append( n );
+        result = arr.toStyledString();
+        return result.c_str();
+    }
+    catch ( ... )
+    {
+        static std::string empty = "[]";
+        return empty.c_str();
+    }
+}
+
+}
+#endif // __EMSCRIPTEN__
 
 OpenFilesMenuItem::OpenFilesMenuItem() :
     RibbonMenuItem( "Open files" )

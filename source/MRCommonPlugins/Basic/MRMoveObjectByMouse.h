@@ -20,6 +20,15 @@ public:
 
     MRCOMMONPLUGINS_API static MoveObjectByMouse* instance();
 
+    // Setters to control mode/target from external UI (e.g., WASM)
+    // XfMode: 0-Move, 1-Rotate, 2-Scale
+    MRCOMMONPLUGINS_API void setMode( int mode );
+    // XfTarget: 0-Picked, 1-Selected
+    MRCOMMONPLUGINS_API void setTarget( int target );
+
+    // Control whether to draw ImGui dialog window (HTML replaces it in WASM)
+    MRCOMMONPLUGINS_API void setDialogVisible( bool visible ) { dialogVisible_ = visible; }
+
     virtual bool onDisable_() override;
     virtual void drawDialog( float menuScaling, ImGuiContext* ) override;
 
@@ -48,6 +57,8 @@ private:
         UI::RadioButtonOrModifierState modXfMode{};    // XfMode
         UI::RadioButtonOrModifierState modXfTarget{};  // XfTarget
     } moveByMouse_;
+
+    bool dialogVisible_{ true };
 };
 
 }
