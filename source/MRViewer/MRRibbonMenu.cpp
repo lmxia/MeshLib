@@ -88,6 +88,7 @@ RibbonMenu::RibbonMenu() :
 {
     // 隐藏 Ribbon 的 Tabs 和 Quick Access，但保留其他 ImGui 弹窗/统计
     menuUIConfig_.topLayout = RibbonTopPanelLayoutMode::None;
+    menuUIConfig_.drawScenePanel = false;  // 隐藏整个左侧面板
 }
 
 RibbonMenu::~RibbonMenu()

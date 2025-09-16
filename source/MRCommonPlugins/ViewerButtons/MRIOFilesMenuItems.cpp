@@ -170,11 +170,83 @@ EMSCRIPTEN_KEEPALIVE void emsAddFileToScene( const char* filename, int contextId
 }
 
 // 封装 SaveObjectMenuItem::action() 供 JavaScript 调用
+
+EMSCRIPTEN_KEEPALIVE bool emsOpenFilesMenuAction()
+{
+    using namespace MR;
+    OpenFilesMenuItem openItem;
+    return openItem.action();
+}
+
 EMSCRIPTEN_KEEPALIVE bool emsSaveSelectedObjects()
 {
     using namespace MR;
     SaveObjectMenuItem saveItem;
     return saveItem.action();
+}
+
+// 获取场景对象列表（用于HTML场景控制台）
+EMSCRIPTEN_KEEPALIVE const char* emsGetSceneObjects()
+{
+    using namespace MR;
+    try
+    {
+        auto objects = SceneRoot::get().children();
+        Json::Value root( Json::arrayValue );
+        
+        for ( size_t i = 0; i < objects.size(); ++i )
+        {
+            Json::Value obj;
+            obj["index"] = (int)i;
+            obj["name"] = objects[i]->name();
+            obj["type"] = objects[i]->className();
+            obj["visible"] = objects[i]->isVisible();
+            obj["selected"] = objects[i]->isSelected();
+            root.append( obj );
+        }
+        
+        static std::string result;
+        result = root.toStyledString();
+        return result.c_str();
+    }
+    catch ( const std::exception& e )
+    {
+        static std::string error = "[]";
+        return error.c_str();
+    }
+}
+
+// 选择/取消选择对象
+EMSCRIPTEN_KEEPALIVE void emsSelectObject( const char* objectName, bool selected )
+{
+    using namespace MR;
+    auto obj = SceneRoot::get().find( objectName );
+    if ( obj )
+    {
+        obj->select( selected );
+    }
+}
+
+// 设置对象可见性
+EMSCRIPTEN_KEEPALIVE void emsSetObjectVisibility( const char* objectName, bool visible )
+{
+    using namespace MR;
+    auto obj = SceneRoot::get().find( objectName );
+    if ( obj )
+    {
+        obj->setVisible( visible );
+    }
+}
+
+// 删除对象
+EMSCRIPTEN_KEEPALIVE void emsDeleteObject( const char* objectName )
+{
+    using namespace MR;
+    auto obj = SceneRoot::get().find( objectName );
+    if ( obj )
+    {
+        obj->detachFromParent();
+    }
 }
 
 
@@ -187,6 +259,28 @@ EMSCRIPTEN_KEEPALIVE void emsGetObjectFromScene( const char* objectName, const c
     auto res = saveObjectToFile( *obj, pathFromUtf8(filename), { .backupOriginalFile = false} );
     if ( !res )
         showError( res.error() );
+}
+
+EMSCRIPTEN_KEEPALIVE void emsOpenFilesDialog()
+{
+    using namespace MR;
+    IOFilters filters =
+        MeshLoad::getFilters() | LinesLoad::getFilters() | PointsLoad::getFilters() |
+        SceneLoad::getFilters() | DistanceMapLoad::getFilters() | GcodeLoad::Filters | ObjectLoad::getFilters();
+#if defined( __EMSCRIPTEN__ ) && !defined( __EMSCRIPTEN_PTHREADS__ )
+    filters = filters | AsyncObjectLoad::getFilters();
+#endif
+    openFilesDialogAsync( [filters] ( const std::vector<std::filesystem::path>& filenames )
+    {
+        if ( filenames.empty() )
+            return;
+        if ( !checkPaths( filenames, filters ) )
+        {
+            showError( stringUnsupportedFileExtension() );
+            return;
+        }
+        getViewerInstance().loadFiles( filenames );
+    }, { .filters = filters } );
 }
 
 }

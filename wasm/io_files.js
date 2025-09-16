@@ -368,3 +368,77 @@ var test_download_file = function (url) {
     emplace_file_in_local_FS_and_open("downloadedFile.stl", new Uint8Array(await response.arrayBuffer()),(e)=>{ console.log(JSON.parse(e)); });
   });
 }
+
+// 导出文件：集成到本文件，供顶部按钮绑定调用
+function exportFile() {
+  if (typeof Module === 'undefined' || !Module.ccall) {
+    console.error('Module not available');
+    return;
+  }
+  try {
+    var result = Module.ccall('emsSaveSelectedObjects', 'boolean', [], []);
+    if (result) {
+      console.warn('Save operation may have encountered an issue');
+    }
+  } catch (error) {
+    console.error('Error calling save function:', error);
+    alert('导出失败: ' + error.message);
+  }
+}
+// 公开到全局命名空间（如已存在则覆盖为最新实现）
+window.exportFile = exportFile;
+
+// 绑定顶部按钮（增加健壮性：直到绑定成功为止，避免脚本加载顺序导致未绑定）
+; (function bindTopButtons(){
+  var attempts = 0;
+  var timer = null;
+  function tryBind(){
+    attempts++;
+    var openBtn = document.getElementById('open-file-btn');
+    if (openBtn && !openBtn.__bound) {
+      console.log('[ui] bind open-file-btn');
+      openBtn.addEventListener('click', function(){
+        console.log('[ui] open-file-btn clicked');
+        try {
+          if (typeof Module !== 'undefined' && Module.ccall) {
+            Module.ccall('emsOpenFilesDialog', 'void', [], []);
+          } else {
+            console.warn('[ui] Module.ccall not ready');
+          }
+        }
+        catch(e){ console.error('[ui] emsOpenFilesDialog error', e); }
+      });
+      openBtn.__bound = true;
+    }
+    var exportBtn = document.getElementById('export-file-btn');
+    if (exportBtn && !exportBtn.__bound && typeof window.exportFile === 'function') {
+      console.log('[ui] bind export-file-btn');
+      exportBtn.addEventListener('click', function(){
+        console.log('[ui] export-file-btn clicked');
+        try { window.exportFile(); }
+        catch(e){ console.error('[ui] exportFile error', e); }
+      });
+      exportBtn.__bound = true;
+    }
+    // 若两个都已绑定，或尝试多次后停止
+    if ((openBtn && openBtn.__bound) && (exportBtn && exportBtn.__bound)) {
+      if (timer) clearInterval(timer);
+      timer = null;
+    } else if (attempts >= 50) { // 最多重试 ~5秒（100ms * 50）
+      if (timer) clearInterval(timer);
+      timer = null;
+      if (!(openBtn && openBtn.__bound)) console.warn('[ui] open-file-btn not bound after retries');
+      if (!(exportBtn && exportBtn.__bound)) console.warn('[ui] export-file-btn not bound after retries');
+    }
+  }
+  function start(){
+    if (timer) return;
+    timer = setInterval(tryBind, 100);
+    tryBind();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
