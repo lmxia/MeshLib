@@ -19,16 +19,37 @@
             <div class="progress" id="progress">
             </div>
         </div>
+        <!-- Header with buttons -->
         <div id="controls">
             <input id="open-file-btn" type="button" class="button" value="打开文件" />
             <input id="export-file-btn" type="button" class="button" value="导出文件" />
         </div>
-        <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+        
+        <!-- Main content area with left panel and right canvas -->
+        <div class="main-container">
+            <!-- Left scene control panel -->
+            <div id="scene-panel">
+                <div class="panel-resize-handle" id="panel-resize-handle"></div>
+                <div id="scene-panel-header">
+                    场景控制台
+                </div>
+                <div id="scene-list">
+                    <!-- Scene objects will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Right canvas area -->
+            <div class="canvas-container">
+                <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+            </div>
+        </div>
         <script src="ios_detect.js"></script>
         <script src="color_theme.js"></script>
         <script src="reset_events.js"></script>
         <script src="popups.js"></script>
         <script src="io_files.js"></script>
+        <script src="scene_control.js"></script>
+        <script src="panel_resize.js"></script>
         <script src="open_link.js"></script>
         <script src="resize.js"></script>
         <script src="setter_cursor_type.js"></script>

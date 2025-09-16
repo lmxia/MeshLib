@@ -69,6 +69,124 @@
         }
     }
 
+    // 保存单个对象
+    function saveObject(objectName) {
+        if (typeof Module === 'undefined' || !Module.ccall) {
+            console.error('Module not available');
+            return;
+        }
+
+        try {
+            // 先选择对象，然后保存
+            Module.ccall('emsSelectObject', 'void', ['string', 'boolean'], [objectName, true]);
+            Module.ccall('emsSaveSelectedObjects', 'boolean', [], []);
+        } catch (error) {
+            console.error('Error saving object:', error);
+        }
+    }
+
+    // 适应单个对象到视图
+    function fitObject(objectName) {
+        if (typeof Module === 'undefined' || !Module.ccall) {
+            console.error('Module not available');
+            return;
+        }
+
+        try {
+            // 先选择对象，然后适应视图
+            Module.ccall('emsSelectObject', 'void', ['string', 'boolean'], [objectName, true]);
+            // 使用emsFitScene来适应选中的对象
+            Module.ccall('emsFitScene', 'void', [], []);
+        } catch (error) {
+            console.error('Error fitting object:', error);
+        }
+    }
+
+    // 居中显示对象
+    function centerObject(objectName) {
+        if (typeof Module === 'undefined' || !Module.ccall) {
+            console.error('Module not available');
+            return;
+        }
+
+        try {
+            // 先选择对象，然后居中
+            Module.ccall('emsSelectObject', 'void', ['string', 'boolean'], [objectName, true]);
+            // 使用emsFitScene来居中选中的对象
+            Module.ccall('emsFitScene', 'void', [], []);
+        } catch (error) {
+            console.error('Error centering object:', error);
+        }
+    }
+
+
+    // 显示对象信息
+    function showObjectInfo(objectName) {
+        const objects = getSceneObjects();
+        const obj = objects.find(o => o.name === objectName);
+        
+        if (obj) {
+            const info = `对象名称: ${obj.name}\n类型: ${obj.type}\n可见性: ${obj.visible ? '可见' : '隐藏'}\n选中状态: ${obj.selected ? '已选中' : '未选中'}`;
+            alert(info);
+        }
+    }
+
+    // 保存所有对象
+    function saveAllObjects() {
+        if (typeof Module === 'undefined' || !Module.ccall) {
+            console.error('Module not available');
+            return;
+        }
+
+        try {
+            const objects = getSceneObjects();
+            if (objects.length === 0) {
+                alert('场景中没有对象可保存');
+                return;
+            }
+
+            // 选择所有对象
+            objects.forEach(obj => {
+                Module.ccall('emsSelectObject', 'void', ['string', 'boolean'], [obj.name, true]);
+            });
+
+            // 保存选中的对象
+            Module.ccall('emsSaveSelectedObjects', 'boolean', [], []);
+        } catch (error) {
+            console.error('Error saving all objects:', error);
+        }
+    }
+
+    // 清空所有对象
+    function clearAllObjects() {
+        if (!confirm('确定要清空场景中的所有对象吗？此操作不可撤销。')) {
+            return;
+        }
+
+        try {
+            const objects = getSceneObjects();
+            objects.forEach(obj => {
+                Module.ccall('emsDeleteObject', 'void', ['string'], [obj.name]);
+            });
+        } catch (error) {
+            console.error('Error clearing all objects:', error);
+        }
+    }
+
+    // 适应整个场景
+    function fitScene() {
+        if (typeof Module === 'undefined' || !Module.ccall) {
+            console.error('Module not available');
+            return;
+        }
+
+        try {
+            Module.ccall('emsFitScene', 'void', [], []);
+        } catch (error) {
+            console.error('Error fitting scene:', error);
+        }
+    }
+
     // 更新场景列表显示
     function updateSceneList() {
         if (isUpdating) return;
@@ -100,10 +218,18 @@
             item.className = `scene-item ${obj.selected ? 'selected' : ''}`;
             
             item.innerHTML = `
-                <input type="checkbox" ${obj.visible ? 'checked' : ''} 
-                       onchange="sceneControl.setObjectVisibility('${obj.name}', this.checked)">
-                <span class="object-name" onclick="sceneControl.selectObject('${obj.name}', !${obj.selected})">${obj.name}</span>
-                <button class="delete-btn" onclick="sceneControl.deleteObject('${obj.name}')">删除</button>
+                <span class="object-name" onclick="sceneControl.selectObject('${obj.name}', !${obj.selected})" title="点击选择/取消选择">${obj.name}</span>
+                <div class="action-buttons">
+                    <button class="action-btn visibility-btn ${obj.visible ? 'visible' : 'hidden'}" 
+                            onclick="sceneControl.setObjectVisibility('${obj.name}', !${obj.visible})" 
+                            title="${obj.visible ? '隐藏对象' : '显示对象'}">
+                        ${obj.visible ? '👁️' : '🙈'}
+                    </button>
+                    <button class="action-btn fit-btn" onclick="sceneControl.fitObject('${obj.name}')" title="适应视图">适应</button>
+                    <button class="action-btn center-btn" onclick="sceneControl.centerObject('${obj.name}')" title="居中显示">居中</button>
+                    <button class="action-btn info-btn" onclick="sceneControl.showObjectInfo('${obj.name}')" title="显示信息">信息</button>
+                    <button class="action-btn delete-btn" onclick="sceneControl.deleteObject('${obj.name}')" title="删除对象">删除</button>
+                </div>
             `;
             
             listContainer.appendChild(item);
@@ -145,6 +271,9 @@
         selectObject: selectObject,
         setObjectVisibility: setObjectVisibility,
         deleteObject: deleteObject,
+        fitObject: fitObject,
+        centerObject: centerObject,
+        showObjectInfo: showObjectInfo,
         updateSceneList: updateSceneList,
         startAutoUpdate: startAutoUpdate,
         stopAutoUpdate: stopAutoUpdate,
