@@ -224,6 +224,11 @@ EMSCRIPTEN_KEEPALIVE void emsSelectObject( const char* objectName, bool selected
     if ( obj )
     {
         obj->select( selected );
+        // Use the same method as mouse move events
+        getViewerInstance().emplaceEvent( "Select object", [&] ()
+        {
+            getViewerInstance().draw();
+        }, true );
     }
 }
 
@@ -235,6 +240,11 @@ EMSCRIPTEN_KEEPALIVE void emsSetObjectVisibility( const char* objectName, bool v
     if ( obj )
     {
         obj->setVisible( visible );
+        // Use the same method as mouse move events
+        getViewerInstance().emplaceEvent( "Set visibility", [&] ()
+        {
+            getViewerInstance().draw();
+        }, true );
     }
 }
 
@@ -246,6 +256,11 @@ EMSCRIPTEN_KEEPALIVE void emsDeleteObject( const char* objectName )
     if ( obj )
     {
         obj->detachFromParent();
+        // Use the same method as mouse move events
+        getViewerInstance().emplaceEvent( "Delete object", [&] ()
+        {
+            getViewerInstance().draw();
+        }, true );
     }
 }
 
@@ -281,6 +296,18 @@ EMSCRIPTEN_KEEPALIVE void emsOpenFilesDialog()
         }
         getViewerInstance().loadFiles( filenames );
     }, { .filters = filters } );
+}
+
+// 适应场景到视图
+EMSCRIPTEN_KEEPALIVE void emsFitScene()
+{
+    using namespace MR;
+    getViewerInstance().viewport().preciseFitDataToScreenBorder({0.9f});
+    // Use the same method as mouse move events
+    getViewerInstance().emplaceEvent( "Fit scene", [&] ()
+    {
+        getViewerInstance().draw();
+    }, true );
 }
 
 }
