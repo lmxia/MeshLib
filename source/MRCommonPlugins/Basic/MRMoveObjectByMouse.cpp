@@ -31,6 +31,9 @@ MoveObjectByMouse::MoveObjectByMouse() :
     PluginParent( "Move object", StatePluginTabs::Basic )
 {
     sInstance = this;
+#ifdef __EMSCRIPTEN__
+    dialogVisible_ = false;
+#endif
 }
 
 MoveObjectByMouse::~MoveObjectByMouse()

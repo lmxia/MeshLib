@@ -97,6 +97,8 @@
     b.dataset.itemName = slot.name;
     b.addEventListener('click',()=>{
       try{ Module.ccall('emsInvokeToolbarItem','number',['string'],[slot.name]); }catch(e){ console.error('invoke failed', slot.name, e); }
+      // refresh highlights right after action
+      setTimeout(updateActiveHighlights, 0);
     });
     return b;
   }
@@ -340,8 +342,7 @@
   Module.postRun.push(populate);
   // Fallback populate in case postRun never fires (e.g. caching or load order issues)
   window.addEventListener('load', ()=> setTimeout(populate, 1500));
-  // Periodically sync active highlights
-  setInterval(updateActiveHighlights, 700);
+  // No polling; refresh on user actions only
 })();
 
 

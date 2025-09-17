@@ -46,6 +46,9 @@
 #include <imgui_internal.h> // needed here to fix items dialogs windows positions
 #include <misc/freetype/imgui_freetype.h> // for proper font loading
 #include <regex>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 namespace MR
 {
@@ -98,6 +101,18 @@ void RibbonMenu::init( MR::Viewer* _viewer )
     readMenuItemsStructure_();
 
     RibbonIcons::load();
+
+#ifdef __EMSCRIPTEN__
+    // In WASM: hide notifications (bell) and use a lighter background color
+    menuUIConfig_.drawNotifications = false;
+    // lighten viewport background
+    for ( auto& vp : getViewerInstance().viewport_list )
+    {
+        auto params = vp.getParameters();
+        params.backgroundColor = Color( 0.96f, 0.97f, 0.98f, 1.0f );
+        vp.setParameters( params );
+    }
+#endif
 
     callback_draw_viewer_window = [] ()
     {};
