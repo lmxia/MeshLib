@@ -96,29 +96,51 @@
     b.style.cursor='pointer';
     b.dataset.itemName = slot.name;
     b.addEventListener('click',()=>{
-      try{ Module.ccall('emsInvokeToolbarItem','number',['string'],[slot.name]); }catch(e){ console.error('invoke failed', slot.name, e); }
+      console.log('[toolbar] click', { schemaName: slot.name, title } );
+      try{
+        const ok = Module.ccall('emsInvokeToolbarItem','number',['string'],[slot.name]);
+        console.log('[toolbar] emsInvokeToolbarItem', slot.name, '->', ok);
+      }catch(e){ console.error('invoke failed', slot.name, e); }
       // refresh highlights right after action
-      setTimeout(updateActiveHighlights, 0);
+      setTimeout(updateActiveHighlights, 50);
     });
     return b;
   }
+
+  function normName(s){ return (s||'').toString().trim().toLowerCase(); }
 
   function updateActiveHighlights(){
     try{
       const ptr = Module.ccall('emsGetActiveItems','string',[],[]);
       const json = typeof ptr === 'string' ? ptr : UTF8ToString(ptr);
       const activesArr = JSON.parse(json||'[]').map(s=> (s||'').toString());
-      const actives = new Set(activesArr);
+      console.log('[toolbar] active items (raw)', activesArr);
+      const actives = new Set(activesArr.map(normName));
+      const hasAnyActive = actives.size > 0;
       const root = document.getElementById('html-toolbar');
       if (!root) return;
       root.querySelectorAll('button').forEach(btn=>{
         const name = btn.dataset.itemName || btn.textContent;
-        if (actives.has(name)){
+        const nameNorm = normName(name);
+        if (!btn.dataset._logged){
+          console.log('[toolbar] button present', {name, nameNorm, text: btn.textContent});
+          btn.dataset._logged = '1';
+        }
+        const isActiveListBtn = (nameNorm === normName('Active Plugins List')) || btn.textContent.includes('活动');
+        const shouldHighlight = isActiveListBtn ? hasAnyActive : actives.has(nameNorm);
+        if (shouldHighlight){
           btn.style.outline = '2px solid #f59e0b';
           btn.style.background = '#2563eb';
+          if (isActiveListBtn){
+            btn.disabled = false;
+            btn.style.pointerEvents = 'none'; // keep unclickable but not greyed
+            btn.style.opacity = '1';
+          }
         } else {
-          if (btn.textContent.includes('活动')){
+          if (isActiveListBtn){
             btn.style.background = '#6b7280';
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
           } else {
             btn.style.background = '#3b82f6';
           }
@@ -302,6 +324,7 @@
     const ui = ensureUI();
     if (!ui){ console.error('[toolbar] failed to ensure UI'); return; }
     getItems().then(items=>{
+      console.log('[toolbar] quick access items', items);
       ui.content.textContent = '';
       if (!items || !items.length){
         const tip = document.createElement('span');
@@ -342,6 +365,22 @@
   Module.postRun.push(populate);
   // Fallback populate in case postRun never fires (e.g. caching or load order issues)
   window.addEventListener('load', ()=> setTimeout(populate, 1500));
+  
+  // Test function to manually check active items (for debugging)
+  window.testActiveItems = function(){
+    try{
+      const ptr = Module.ccall('emsGetActiveItems','string',[],[]);
+      const json = typeof ptr === 'string' ? ptr : UTF8ToString(ptr);
+      const actives = JSON.parse(json||'[]');
+      console.log('[toolbar] test active items:', actives);
+      updateActiveHighlights();
+      return actives;
+    }catch(e){
+      console.error('[toolbar] test failed:', e);
+      return [];
+    }
+  };
+  
   // No polling; refresh on user actions only
 })();
 
