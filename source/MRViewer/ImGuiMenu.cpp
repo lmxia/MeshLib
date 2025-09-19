@@ -96,6 +96,7 @@
 #include "MRVisualObjectTag.h"
 #include "MRMesh/MRSceneColors.h"
 #include "MRMesh/MRString.h"
+#include "MRUIQualityControl.h"
 
 #ifndef MRVIEWER_NO_VOXELS
 #include "MRVoxels/MRObjectVoxels.h"
@@ -412,6 +413,8 @@ void ImGuiMenu::reload_font(int font_size)
   io.Fonts->Clear();
 
   load_font(font_size);
+
+  UI::detail::setScale( menu_scaling() ); // Send the menu scale to the UI.
 }
 
 void ImGuiMenu::shutdown()
@@ -1662,24 +1665,12 @@ void ImGuiMenu::drawComparablePropertiesEditor_( ObjectComparableWithReference& 
         }
     }
 
-    // Width for half-width widgets.
-    // There are two separate variables to prevent rounding from messing up the alignment.
-    const float halfWidth1 = std::round( ( fullWidth - ImGui::GetStyle().ItemInnerSpacing.x ) / 2 );
-    const float halfWidth2 = fullWidth - halfWidth1 - ImGui::GetStyle().ItemInnerSpacing.x;
-
     // Tolerances.
     const std::size_t numTols = object.numComparableProperties();
     for ( std::size_t i = 0; i < numTols; i++ )
     {
-        bool hasTol = false;
-        ObjectComparableWithReference::ComparisonTolerance tol;
-        if ( auto opt = object.getComparisonTolerence( i ) )
-        {
-            hasTol = true;
-            tol = *opt;
-        }
+        auto tolOpt = object.getComparisonTolerence( i );
 
-        ImGui::SetNextItemWidth( fullWidth );
 
         std::string name;
         if ( numTols == 1 )
@@ -1687,29 +1678,12 @@ void ImGuiMenu::drawComparablePropertiesEditor_( ObjectComparableWithReference& 
         else
             name = fmt::format( "{} tolerance", object.getComparablePropertyName( i ) );
 
-        if ( object.comparisonToleranceIsAlwaysOnlyPositive( i ) )
-        {
-            ImGui::SetNextItemWidth( fullWidth );
-            if ( UI::input<LengthUnit>( name.c_str(), tol.positive, 0.f, FLT_MAX, { .decorationFormatString = hasTol ? "{}" : notSpecifiedStr } ) )
-                object.setComparisonTolerance( i, tol );
-        }
-        else
-        {
-            ImGui::SetNextItemWidth( halfWidth1 );
-
-            if ( UI::input<LengthUnit>( fmt::format( "###positive:{}", name ).c_str(), tol.positive, 0.f, FLT_MAX, { .decorationFormatString = hasTol ? "{}" : notSpecifiedStr } ) )
-                object.setComparisonTolerance( i, tol );
-
-            ImGui::SameLine( 0, ImGui::GetStyle().ItemInnerSpacing.x );
-
-            ImGui::SetNextItemWidth( halfWidth2 );
-
-            if ( UI::input<LengthUnit>( fmt::format( "{}###negative", name ).c_str(), tol.negative, -FLT_MAX, 0.f, { .decorationFormatString = hasTol ? "{}" : notSpecifiedStr } ) )
-                object.setComparisonTolerance( i, tol );
-        }
+        ImGui::SetNextItemWidth( fullWidth );
+        if ( QualityControl::inputTolerance( name.c_str(), tolOpt ) )
+            object.setComparisonTolerance( i, tolOpt );
 
         // The button to remove tolerance.
-        if ( hasTol )
+        if ( tolOpt )
         {
             ImGui::SameLine();
 
@@ -1961,6 +1935,7 @@ bool ImGuiMenu::drawDrawOptionsCheckboxes( const std::vector<std::shared_ptr<Vis
     {
         someChanges |= make_visualize_checkbox( selectedVisualObjs, "Points", LinesVisualizePropertyType::Points, viewportid );
         someChanges |= make_visualize_checkbox( selectedVisualObjs, "Smooth corners", LinesVisualizePropertyType::Smooth, viewportid );
+        someChanges |= make_visualize_checkbox( selectedVisualObjs, "Dashed", LinesVisualizePropertyType::Dashed, viewportid );
         make_width<ObjectLinesHolder>( selectedVisualObjs, "Line width", [&] ( const ObjectLinesHolder* objLines )
         {
             return objLines->getLineWidth();
@@ -3543,13 +3518,22 @@ BasicUiRenderTask::BackwardPassParams ImGuiMenu::UiRenderManagerImpl::beginBackw
     menuPlugin->drawSceneUiSignal( menuPlugin->menu_scaling(), viewport, tasks );
 
     return {
-        .consumedInteractions = ( ImGui::GetIO().WantCaptureMouse || getViewerInstance().getHoveredViewportId() != viewport ) * BasicUiRenderTask::InteractionMask::mouseHover,
+        .consumedInteractions = ( ImGui::GetIO().WantCaptureMouse || getViewerInstance().getHoveredViewportIdOrInvalid() != viewport ) * BasicUiRenderTask::InteractionMask::mouseHover,
     };
 }
 
-void ImGuiMenu::UiRenderManagerImpl::finishBackwardPass( const BasicUiRenderTask::BackwardPassParams& params )
+void ImGuiMenu::UiRenderManagerImpl::finishBackwardPass( ViewportId viewport, const BasicUiRenderTask::BackwardPassParams& params )
 {
-    if ( ImGui::GetIO().WantCaptureMouse )
+    auto hoveredViewport = getViewerInstance().getHoveredViewportIdOrInvalid();
+
+    if ( hoveredViewport != viewport )
+    {
+        if ( !hoveredViewport.valid() )
+            consumedInteractions = {}; // No viewports are hovered, just zero this.
+
+        // Otherwise we have some hovered viewport, but it's not this one, so we let that one viewport set `consumedInteractions`.
+    }
+    else if ( ImGui::GetIO().WantCaptureMouse )
     {
         // Some other UI is hovered, but not ours.
         consumedInteractions = {};
