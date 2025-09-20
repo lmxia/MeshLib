@@ -38,11 +38,13 @@ ProvidesViewportWidget::ProvidesViewportWidget()
 DrawViewportWidgetsItem::DrawViewportWidgetsItem()
     : RibbonMenuItem( "Draw Viewport Widgets" )
 {
+#ifndef __EMSCRIPTEN__
     preDrawConnection_ = getViewerInstance().preDrawSignal.connect( [this]
     {
         for ( Viewport& viewport : getViewerInstance().viewport_list )
             handleViewport( viewport );
     } );
+#endif
 }
 
 void DrawViewportWidgetsItem::handleViewport( Viewport& viewport )

@@ -36,6 +36,9 @@
 
     el.appendChild(content);
     document.body.appendChild(el);
+    
+    // 将工具栏定位到画布容器的顶部中间
+    positionElementOverCanvas(el, { defaultWidth: 200, topOffset: 10 });
 
     // drag
     let dragging=false, sx=0, sy=0, sl=0, st=0;
@@ -174,6 +177,23 @@
     return map[key] || caption || fallbackName || '';
   }
 
+  function positionElementOverCanvas(element, options = {}) {
+    const canvasContainer = document.querySelector('.canvas-container');
+    if (!canvasContainer) return;
+    
+    const rect = canvasContainer.getBoundingClientRect();
+    const elementWidth = element.offsetWidth || options.defaultWidth || 200;
+    const topOffset = options.topOffset || 10;
+    
+    // 计算画布容器的中心位置
+    const canvasCenterX = rect.left + rect.width / 2;
+    const canvasTop = rect.top;
+    
+    // 设置元素位置：画布顶部中间
+    element.style.left = (canvasCenterX - elementWidth / 2) + 'px';
+    element.style.top = (canvasTop + topOffset) + 'px';
+  }
+
   function ensureUI(){
     let el = document.getElementById('html-toolbar');
     if (!el){
@@ -296,6 +316,9 @@
     panel.appendChild(header);
     panel.appendChild(body);
     document.body.appendChild(panel);
+    
+    // 将移动对象面板定位到画布容器的顶部中间
+    positionElementOverCanvas(panel, { defaultWidth: 240, topOffset: 60 });
 
     // drag
     let dragging=false,sx=0,sy=0,sl=0,st=0;
@@ -318,6 +341,11 @@
     const hasMove = activeNames.some(n => (n||'').toLowerCase() === 'move object');
     const panel = ensureMovePanel();
     panel.style.display = hasMove ? 'block' : 'none';
+    
+    // 如果面板显示，重新定位到画布顶部中间
+    if (hasMove) {
+      positionElementOverCanvas(panel, { defaultWidth: 240, topOffset: 60 });
+    }
   }
 
   function populate(){
@@ -351,6 +379,9 @@
 
       items.forEach(slot=> ui.content.appendChild(makeButton(slot)) );
       updateActiveHighlights();
+      
+      // 重新定位工具栏到画布顶部中间
+      positionElementOverCanvas(ui.root, { defaultWidth: 200, topOffset: 10 });
     });
   }
 

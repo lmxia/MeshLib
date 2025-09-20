@@ -52,13 +52,13 @@ var open_files_dialog_popup = function (extensions, multi) {
 
 var download_file_dialog_popup = function (defaultName, extensions) {
   var isLightThemeEnabled = getColorTheme();
-  var { overlay, popup } = createOverlayPopup('show_download_dialog', "Save File", 440, 232, true, true, freeFSCallback);
+  var { overlay, popup } = createOverlayPopup('show_download_dialog', "保存文件", 440, 232, true, true, freeFSCallback);
 
   var textColor = isLightThemeEnabled ? '#181a1d' : '#fff';
   var bgColor = isLightThemeEnabled ? '#f5f6f9' : '#000';
   var name_label = document.createElement('label');
   name_label.setAttribute('style', 'width: 144px;height: 20px;position: absolute;top: 86px;left: 62px;margin-left: 0px;font-size: 14px;color:' + textColor);
-  name_label.innerHTML = 'Name';
+  name_label.innerHTML = '名称';
   name_label.setAttribute('class', 'unselectable');
 
   var name_selector = document.createElement('input');
@@ -70,7 +70,7 @@ var download_file_dialog_popup = function (defaultName, extensions) {
 
   var ext_label = document.createElement('label');
   ext_label.setAttribute('style', 'width: 59px;height: 20px;font-size: 14px;position: absolute;color:' + textColor + ';top: 131px;left: 38px;');
-  ext_label.innerHTML = 'Extension';
+  ext_label.innerHTML = '扩展名';
   ext_label.setAttribute('class', 'unselectable');
 
   var list_item = document.createElement('select');
@@ -87,7 +87,7 @@ var download_file_dialog_popup = function (defaultName, extensions) {
 
   var btn_save = document.createElement('input');
   btn_save.setAttribute('type', 'button');
-  btn_save.setAttribute('value', 'Save');
+  btn_save.setAttribute('value', '保存');
   btn_save.setAttribute('style', 'position: absolute;width: 100px;height: 28px;top: 194px;left: 50%;transform: translate(-50%, -50%);border-radius: 4px;color: #fff;font-size: 14px;font-weight: 600;border: none;');
   btn_save.setAttribute('class', 'button');
   btn_save.onclick = function () {
@@ -398,15 +398,32 @@ window.exportFile = exportFile;
     if (openBtn && !openBtn.__bound) {
       console.log('[ui] bind open-file-btn');
       openBtn.addEventListener('click', function(){
-        console.log('[ui] open-file-btn clicked');
-        try {
-          if (typeof Module !== 'undefined' && Module.ccall) {
-            Module.ccall('emsOpenFilesDialog', 'void', [], []);
-          } else {
-            console.warn('[ui] Module.ccall not ready');
-          }
+        var exts = '.stl,.obj,.ply,.glb,.gltf,.off,.ctm,.e57,.las,.laz,.mesh,.zip,.3mf';
+        var canvas = document.getElementById('canvas');
+        if (canvas && typeof canvas.focus === 'function') {
+          try { canvas.focus(); } catch(e) {}
         }
-        catch(e){ console.error('[ui] emsOpenFilesDialog error', e); }
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = exts;
+        input.style.display = 'none';
+        input.onchange = function(e){
+          var f = e.target && e.target.files && e.target.files[0];
+          if (!f) return;
+          var reader = new FileReader();
+          reader.onloadend = function(ev){
+            if (reader.readyState !== 2) return;
+            if (typeof emplace_file_in_local_FS_and_open === 'function') {
+              emplace_file_in_local_FS_and_open(f.name, new Uint8Array(ev.target.result));
+            } else if (typeof open_files === 'function') {
+              open_files(e);
+            }
+          };
+          reader.readAsArrayBuffer(f);
+        };
+        document.body.appendChild(input);
+        input.click();
+        setTimeout(function(){ document.body.removeChild(input); }, 0);
       });
       openBtn.__bound = true;
     }

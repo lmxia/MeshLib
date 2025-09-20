@@ -12,6 +12,7 @@
 #include "MRViewerSettingsManager.h"
 #include "MRUIStyle.h"
 #include "MRViewport.h"
+#include "MRViewportGlobalBasis.h"
 #include "MRViewer.h"
 #include "MRSceneCache.h"
 #include "MRShortcutManager.h"
@@ -105,13 +106,6 @@ void RibbonMenu::init( MR::Viewer* _viewer )
 #ifdef __EMSCRIPTEN__
     // In WASM: hide notifications (bell) and use a lighter background color
     menuUIConfig_.drawNotifications = false;
-    // lighten viewport background
-    for ( auto& vp : getViewerInstance().viewport_list )
-    {
-        auto params = vp.getParameters();
-        params.backgroundColor = Color( 0.96f, 0.97f, 0.98f, 1.0f );
-        vp.setParameters( params );
-    }
 #endif
 
     callback_draw_viewer_window = [] ()
@@ -123,13 +117,12 @@ void RibbonMenu::init( MR::Viewer* _viewer )
         const bool cShowTopPanel = menuUIConfig_.topLayout != RibbonTopPanelLayoutMode::None;
         const bool cShowAny = cShowTopPanel || menuUIConfig_.drawScenePanel;
 
-        drawActiveBlockingDialog_();
-        drawActiveNonBlockingDialogs_();
-
         ProgressBar::setup(menu_scaling());
 
         if ( cShowTopPanel )
         {
+            drawActiveBlockingDialog_();
+            drawActiveNonBlockingDialogs_();
             drawTopPanel_( menuUIConfig_.topLayout == RibbonTopPanelLayoutMode::RibbonWithTabs, menuUIConfig_.centerRibbonItems );
         }
         // 去掉cShowTopPanel, drawToolbar 为true 会显示悬浮工具栏
@@ -1641,7 +1634,9 @@ void RibbonMenu::drawItemDialog_( DialogItemPtr& itemPtr )
             return; // do not proceed if we closed dialog in this call
     }
 
+#ifndef __EMSCRIPTEN__
     statePlugin->drawDialog( menu_scaling(), ImGui::GetCurrentContext() );
+#endif
 
     if ( !itemPtr.item ) // if it was closed in drawDialog
         return;

@@ -390,9 +390,9 @@
 	"Viewport Colors": {
 		"Background": {
 			"a": 255,
-			"b": 36,
-			"g": 31,
-			"r": 28
+			"b": 240,
+			"g": 235,
+			"r": 230
 		},
 		"Borders": {
 			"a": 255,

@@ -2946,9 +2946,11 @@ void ImGuiMenu::draw_custom_plugins()
     {
         if ( allowRemoval_ )
             allowRemoval_ = false;
+#ifndef __EMSCRIPTEN__
         enabled->drawDialog( menu_scaling(), ImGui::GetCurrentContext() );
         if ( !enabled->dialogIsOpen() )
             enabled->enable( false );
+#endif
     }
     else
     {
