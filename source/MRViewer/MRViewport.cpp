@@ -487,7 +487,9 @@ void Viewport::preDraw()
     if ( !viewportGL_.checkInit() )
         viewportGL_.init();
     draw_rotation_center();
+#ifndef __EMSCRIPTEN__
     drawGlobalBasis();
+#endif
 }
 
 void Viewport::postDraw() const
@@ -496,7 +498,9 @@ void Viewport::postDraw() const
     draw_clipping_plane();
 
     // important to be last
+#ifndef __EMSCRIPTEN__
     drawAxesAndViewController();
+#endif
 }
 
 void Viewport::updateSceneBox_()

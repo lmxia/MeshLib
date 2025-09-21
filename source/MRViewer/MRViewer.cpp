@@ -1186,7 +1186,7 @@ Viewer::Viewer() :
             params.rotationMode = defaultParams.rotationMode;
             viewport.setParameters( params );
             // Reset other properties
-            viewer->viewport().showAxes( true );
+            viewer->viewport().showAxes( false );
             viewer->viewport().showGlobalBasis( false );
             viewer->viewport().showRotationCenter( true );
             viewer->viewport().showClippingPlane( false );
