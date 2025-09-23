@@ -30,7 +30,7 @@ public:
     MRCOMMONPLUGINS_API void setDialogVisible( bool visible ) { dialogVisible_ = visible; }
 
     virtual bool onDisable_() override;
-    virtual void drawDialog( float menuScaling, ImGuiContext* ) override;
+    virtual void drawDialog( ImGuiContext* ) override;
 
     virtual bool blocking() const override { return false; };
 
