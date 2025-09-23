@@ -398,7 +398,7 @@ window.exportFile = exportFile;
     if (openBtn && !openBtn.__bound) {
       console.log('[ui] bind open-file-btn');
       openBtn.addEventListener('click', function(){
-        var exts = '.stl,.obj,.ply,.glb,.gltf,.off,.ctm,.e57,.las,.laz,.mesh,.zip,.3mf';
+        var exts = '.stl,.obj,.ply,.glb,.gltf,.off,.ctm,.e57,.las,.laz,.mesh,.zip,.3mf,.drc';
         var canvas = document.getElementById('canvas');
         if (canvas && typeof canvas.focus === 'function') {
           try { canvas.focus(); } catch(e) {}

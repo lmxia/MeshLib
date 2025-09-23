@@ -6,6 +6,7 @@ project(MRIOExtras CXX)
 
 option(MRIOEXTRAS_NO_3MF "Disable 3MF support" OFF)
 option(MRIOEXTRAS_NO_CTM "Disable OpenCTM support" OFF)
+option(MRIOEXTRAS_NO_DRACO "Disable Draco support" OFF)
 option(MRIOEXTRAS_NO_E57 "Disable E57 support" OFF)
 option(MRIOEXTRAS_NO_GLTF "Disable glTF support" OFF)
 option(MRIOEXTRAS_NO_JPEG "Disable JPEG support" OFF)
@@ -44,6 +45,17 @@ IF(NOT MRIOEXTRAS_NO_CTM)
   IF(NOT MR_EMSCRIPTEN)
     target_include_directories(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:${MESHLIB_THIRDPARTY_DIR}/OpenCTM-git/lib>)
   ENDIF()
+ENDIF()
+
+IF(NOT MRIOEXTRAS_NO_DRACO)
+  list(APPEND MRIOEXTRAS_DEPENDENCIES draco)
+  # Draco headers live under draco/src; add explicitly to avoid missing includes
+  target_include_directories(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:${MESHLIB_THIRDPARTY_DIR}/draco/src>)
+  # Draco generates draco/draco_features.h into its binary dir; cover common locations
+  target_include_directories(${PROJECT_NAME} PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/draco>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/thirdparty/draco>
+  )
 ENDIF()
 
 IF(NOT MRIOEXTRAS_NO_E57)

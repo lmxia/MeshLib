@@ -76,3 +76,6 @@
 [submodule "thirdparty/OpenCTM-git"]
 	path = thirdparty/OpenCTM-git
 	url = https://github.com/MeshInspector/OpenCTM.git
+[submodule "thirdparty/draco"]
+	path = thirdparty/draco
+	url = https://github.com/google/draco.git
